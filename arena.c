@@ -101,6 +101,8 @@ void* arena_allocate(Arena* arena, usize size) {
             current_chunk = current_chunk->next_chunk;
         } else {
             // Create a new chunk and try allocation in this new chunk
+            // also double chunk size
+            arena->chunk_size *= 2;
             if (!(size <= arena->chunk_size)){
                 // set chunk_size to the next biggest power of 2
                 // if the memory requirement wont fit in the current size chunk
@@ -150,6 +152,7 @@ void* arena_allocate_aligned(Arena* arena, usize size, usize alignment) {
             current_chunk = current_chunk->next_chunk;
         } else {
             // Create a new chunk
+            arena->chunk_size *= 2;
             if (!(size <= arena->chunk_size)){
                 // set chunk_size to the next biggest power of 2
                 // if the memory requirement wont fit in the current size chunk
