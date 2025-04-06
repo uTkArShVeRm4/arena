@@ -2,6 +2,21 @@
 #include <stdio.h>
 #include <common_types.h>
 
+usize next_power_of_2(usize n) {
+    if (n == 0) {
+        return 1; // Special case for 0
+    }
+
+    n--;  // Subtract 1 to handle cases where n is already a power of 2
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+
+    return n + 1;
+}
+
 ArenaChunk* create_arena_chunk(usize capacity){
     void* buffer = malloc(capacity);
     if (buffer == NULL){
@@ -86,6 +101,11 @@ void* arena_allocate(Arena* arena, usize size) {
             current_chunk = current_chunk->next_chunk;
         } else {
             // Create a new chunk and try allocation in this new chunk
+            if (!(size <= arena->chunk_size)){
+                // set chunk_size to the next biggest power of 2
+                // if the memory requirement wont fit in the current size chunk
+                arena->chunk_size = next_power_of_2(size);
+            }
             ArenaChunk* new_chunk = create_arena_chunk(arena->chunk_size);
             if (new_chunk == NULL) {
                 // Creating a chunk failed
@@ -115,14 +135,12 @@ void* arena_allocate_aligned(Arena* arena, usize size, usize alignment) {
     
     while (current_chunk != NULL) {
         // Calculate the aligned address within this chunk
-        usize current_addr = (usize)current_chunk->used;
-        usize aligned_addr = align_up(current_addr, alignment);
-        usize new_used = aligned_addr + size;
-        
-        // Check if it fits in this chunk
+        usize current_offset = current_chunk->used;
+        usize aligned_offset = align_up(current_offset, alignment);
+        usize new_used = aligned_offset + size;
+
         if (new_used <= current_chunk->capacity) {
-            // Allocation successful
-            void* ptr = (char*)current_chunk->buffer + aligned_addr;
+            void* ptr = (char*)current_chunk->buffer + aligned_offset;
             current_chunk->used = new_used;
             return ptr;
         }
@@ -132,6 +150,11 @@ void* arena_allocate_aligned(Arena* arena, usize size, usize alignment) {
             current_chunk = current_chunk->next_chunk;
         } else {
             // Create a new chunk
+            if (!(size <= arena->chunk_size)){
+                // set chunk_size to the next biggest power of 2
+                // if the memory requirement wont fit in the current size chunk
+                arena->chunk_size = next_power_of_2(size);
+            }
             ArenaChunk* new_chunk = create_arena_chunk(arena->chunk_size);
             if (new_chunk == NULL) return NULL;
             current_chunk->next_chunk = new_chunk;
