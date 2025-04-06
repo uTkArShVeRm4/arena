@@ -21,6 +21,14 @@ void destroy_arena_chunk(ArenaChunk* arena_chunk);
 
 Arena create_arena(usize chunk_size);
 void* arena_allocate(Arena* arena, usize size);
+void* arena_allocate_aligned(Arena* arena, usize size, usize alignment);
 void destroy_arena(Arena* arena);
+
+// Type-safe allocation macros
+#define ARENA_ALLOC_TYPE(arena, type) \
+    ((type*)arena_allocate_aligned((arena), sizeof(type), _Alignof(type)))
+
+#define ARENA_ALLOC_ARRAY(arena, type, count) \
+    ((type*)arena_allocate_aligned((arena), sizeof(type) * (count), _Alignof(type)))
 
 #endif
